@@ -1,4 +1,3 @@
-use chrono::{NaiveDate, NaiveTime};
 use indexmap::IndexMap;
 use regex::Regex;
 
@@ -45,10 +44,18 @@ fn create_token_map(tokens: Vec<Token>) -> IndexMap<String, AdifType> {
                             .expect("Found a number value that cannot be parsed"),
                     ),
                     'D' => AdifType::Date(
-                        NaiveDate::parse_from_str(token.value.as_str(), "%Y%m%d").unwrap(),
+                        time::Date::parse(
+                            token.value.as_str(),
+                            time::macros::format_description!("[year][month][day]"),
+                        )
+                        .unwrap(),
                     ),
                     'T' => AdifType::Time(
-                        NaiveTime::parse_from_str(token.value.as_str(), "%H%M%S").unwrap(),
+                        time::Time::parse(
+                            token.value.as_str(),
+                            time::macros::format_description!("[hour]:[minute]:[second]"),
+                        )
+                        .unwrap(),
                     ),
                     _ => AdifType::Str(token.value),
                 },

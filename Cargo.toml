@@ -11,7 +11,7 @@ repository = "https://github.com/ewpratten/adif-rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-chrono = "0.4"
 indexmap = "1.6"
 regex = "1"
 lexical = "5.2"
+time = { version = "0.3.30", features = ["formatting", "macros", "parsing"] }

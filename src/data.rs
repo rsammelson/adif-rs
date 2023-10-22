@@ -3,7 +3,6 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
-use chrono::{Datelike, Timelike};
 use indexmap::IndexMap;
 
 #[derive(Debug)]
@@ -34,14 +33,14 @@ pub enum AdifType {
     ///  - YYYY is a 4-Digit year specifier, where 1930 <= YYYY
     ///  - MM is a 2-Digit month specifier, where 1 <= MM <= 12
     ///  - DD is a 2-Digit day specifier, where 1 <= DD <= DaysInMonth(MM)
-    Date(chrono::NaiveDate),
+    Date(time::Date),
 
     /// 6 Digits representing a UTC time in HHMMSS format
     /// or 4 Digits representing a time in HHMM format, where:
     ///  - HH is a 2-Digit hour specifier, where 0 <= HH <= 23
     ///  - MM is a 2-Digit minute specifier, where 0 <= MM <= 59
     ///  - SS is a 2-Digit second specifier, where 0 <= SS <= 59
-    Time(chrono::NaiveTime),
+    Time(time::Time),
 }
 
 impl AdifType {
@@ -92,7 +91,12 @@ impl AdifType {
                     });
                 }
 
-                Ok(format!("{}{:02}{:02}", val.year(), val.month(), val.day()))
+                Ok(format!(
+                    "{}{:02}{:02}",
+                    val.year(),
+                    u8::from(val.month()),
+                    val.day()
+                ))
             }
             AdifType::Time(val) => Ok(format!(
                 "{:02}{:02}{:02}",
@@ -187,7 +191,11 @@ impl AdifHeader {
         let mut output = String::new();
         output.push_str(&format!(
             "Generated {} (UTC)\n\n",
-            chrono::Utc::now().format("%Y-%m-%d %H:%M:%S")
+            time::OffsetDateTime::now_utc()
+                .format(time::macros::format_description!(
+                    "[year]-[month]-[day] [hour]:[minute]:[second]"
+                ))
+                .unwrap()
         ));
 
         let header_tags = self
@@ -265,8 +273,6 @@ impl AdifFile {
 
 #[cfg(test)]
 mod types_tests {
-    use chrono::{NaiveDate, NaiveTime};
-
     use super::*;
 
     #[test]
@@ -310,20 +316,24 @@ mod types_tests {
     #[test]
     pub fn test_ser_date() {
         assert_eq!(
-            AdifType::Date(NaiveDate::from_ymd_opt(2020, 2, 24).unwrap())
-                .serialize("test")
-                .unwrap(),
+            AdifType::Date(
+                time::Date::from_calendar_date(2020, time::Month::February, 24).unwrap()
+            )
+            .serialize("test")
+            .unwrap(),
             "<TEST:8:D>20200224"
         );
-        assert!(AdifType::Date(NaiveDate::from_ymd_opt(1910, 2, 2).unwrap())
-            .serialize("test")
-            .is_err());
+        assert!(AdifType::Date(
+            time::Date::from_calendar_date(1910, time::Month::February, 2).unwrap()
+        )
+        .serialize("test")
+        .is_err());
     }
 
     #[test]
     pub fn test_ser_time() {
         assert_eq!(
-            AdifType::Time(NaiveTime::from_hms_opt(23, 2, 5).unwrap())
+            AdifType::Time(time::Time::from_hms(23, 2, 5).unwrap())
                 .serialize("test")
                 .unwrap(),
             "<TEST:6:T>230205"
