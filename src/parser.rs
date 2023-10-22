@@ -3,7 +3,8 @@ use regex::Regex;
 
 use crate::data::{AdifFile, AdifHeader, AdifRecord, AdifType};
 
-const TOKEN_RE: &str = r"(?:<([A-Za-z_]+):(\d+)(?::([A-Za-z]))?>([^<]*))";
+const TOKEN_RE: &str = r"(?:<([A-Za-z_]+):([0-9]+)(?::([A-Za-z]))?>([^<]*))";
+static TOKEN_REGEX: once_cell::sync::OnceCell<Regex> = once_cell::sync::OnceCell::new();
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct Token {
@@ -14,8 +15,8 @@ struct Token {
 }
 
 fn parse_line_to_tokens(line: &str) -> Vec<Token> {
-    Regex::new(TOKEN_RE)
-        .unwrap()
+    TOKEN_REGEX
+        .get_or_init(|| Regex::new(TOKEN_RE).unwrap())
         .captures_iter(line)
         .map(|cap| Token {
             key: cap[1].to_string().to_uppercase(),
